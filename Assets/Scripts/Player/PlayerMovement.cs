@@ -15,15 +15,20 @@ public class PlayerMovement : MonoBehaviour
     public float speed = 3.0f;
     public GameObject projectile;
     public float fireRate = 0.5f;
+
+    public float lookDirOffset = 90.0f;
     
     private float timeSinceLastFire = 1000.0f;
     private Vector3 moveInput;
     private Rigidbody2D rb;
+    private Vector3 lookDir;
+    private Animator animator;
 
     // Start is called before the first frame update
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
+        animator = GetComponent<Animator>();
     }
 
     void Update()
@@ -39,6 +44,7 @@ public class PlayerMovement : MonoBehaviour
             Shoot();
             timeSinceLastFire = 0.0f;
         }
+        UpdateAnimation();
         
     }
 
@@ -65,27 +71,29 @@ public class PlayerMovement : MonoBehaviour
 
     // Shoot out a projectile towards an enemy
     void Shoot(){
-        GameObject shotProjectile = Instantiate(projectile, transform.position, Quaternion.identity);
-        if (curDirection == PlayerDirection.Right)
+        GameObject shotProjectileGO = Instantiate(projectile, transform.position, Quaternion.identity);
+        Projectile shotProjectile = shotProjectileGO.GetComponent<Projectile>();
+        shotProjectile.enemyTag = "Enemy";
+        lookDir = Camera.main.ScreenToWorldPoint(Input.mousePosition) - transform.position;
+        float lookAngle = Mathf.Atan2(lookDir.y, lookDir.x) * Mathf.Rad2Deg;
+        
+        shotProjectile.dir = lookDir.normalized;
+        shotProjectile.Fire(lookDir);
+        
+        shotProjectile.transform.rotation = Quaternion.Euler(0, 0, lookAngle + lookDirOffset);
+        
+    }
+
+    void UpdateAnimation()
+    {
+        animator.SetBool("IsWalking", moveInput.x != 0.0f || moveInput.y != 0.0f);
+        if (moveInput.x != 0.0f || moveInput.y != 0.0f)
         {
-            shotProjectile.GetComponent<Projectile>().dir = Vector3.right;
-            shotProjectile.transform.Rotate(0, 0, 90);
-        }
-        else if(curDirection == PlayerDirection.Left)
-        {
-            shotProjectile.GetComponent<Projectile>().dir = Vector3.left;
-            shotProjectile.transform.Rotate(0, 0, -90);
-        }
-        else if (curDirection == PlayerDirection.Up)
-        {
-            shotProjectile.GetComponent<Projectile>().dir = Vector3.up;
-        }
-        else
-        {
-            shotProjectile.GetComponent<Projectile>().dir = Vector3.down;
-            shotProjectile.transform.Rotate(0, 0, 180);
+            animator.SetFloat("XInput", moveInput.x);
+            animator.SetFloat("YInput", moveInput.y);
         }
         
+
     }
 
     void UpdateCamera(){
