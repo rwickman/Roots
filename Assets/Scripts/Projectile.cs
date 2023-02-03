@@ -13,6 +13,7 @@ public class Projectile : MonoBehaviour
 
 
     public string enemyTag = "Player";
+    private string environmentTag = "Environment";
     public float liveTime = 5.0f;
 
     private float timeSinceSpawn = 0.0f;
@@ -38,6 +39,10 @@ public class Projectile : MonoBehaviour
         {   
             Health health = col.GetComponent<Health>();
             health.Damage(damage);
+            Destroy(gameObject);
+        }
+        else if(col.gameObject.tag == environmentTag)
+        {
             Destroy(gameObject);
         }
     }

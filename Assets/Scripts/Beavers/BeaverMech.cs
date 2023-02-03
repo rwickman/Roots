@@ -7,7 +7,7 @@ public class BeaverMech : MonoBehaviour
 
     public GameObject projectile;
     
-    public float fireRate = 0.25f;
+    public float[] fireRateEachStage = new float[3]{0.6f, 0.6f, 0.3f};
     public float lookDirOffset = 90.0f;
     public float shootNoiseMagnitude = 1.0f;
     
@@ -18,7 +18,8 @@ public class BeaverMech : MonoBehaviour
     private float timeSinceLastFire = 1000.0f;
     private GameObject player;
     private float[] burstAngles = new float[3]{35.0f, 0.0f, -35.0f};
-
+    private int numDirsForAllDirs = 8;
+    private int lastShotCounter = 0;
 
     // Start is called before the first frame update
     void Start()
@@ -30,17 +31,32 @@ public class BeaverMech : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        curStage = stageTracker.GetStage();
         timeSinceLastFire += Time.deltaTime;
-        if (timeSinceLastFire >= fireRate)
+        if (timeSinceLastFire >= fireRateEachStage[curStage])
         {
-            curStage = stageTracker.GetStage();
+            
             if (curStage == 0)
             {
                 ShootAtPlayer();
             }
-            else{
+            else if(curStage == 1){
                 BurstShootAtPlayer();
             }
+            else
+            {
+                if (lastShotCounter == 0)
+                {
+                    ShootInAllDirections();
+                }
+                else if(lastShotCounter == 1)
+                {
+                    ShootAtPlayer();
+                }
+                
+                lastShotCounter = (lastShotCounter + 1) % 2;
+            }
+            
             
             timeSinceLastFire = 0.0f;
         }
@@ -80,6 +96,23 @@ public class BeaverMech : MonoBehaviour
             Projectile shotProjectile = shotProjectileGO.GetComponent<Projectile>();
 
             shotProjectile.Fire(shootDir);    
+        }
+    }
+
+    void ShootInAllDirections()
+    {
+        float angleFactor = 360 / numDirsForAllDirs;
+        for(int i = 0; i < 8; i++)
+        {
+            Vector3 shootDir = transform.position;
+            shootDir = Quaternion.AngleAxis(angleFactor * i, Vector3.forward) * shootDir;
+            float lookAngle = Mathf.Atan2(shootDir.y, shootDir.x) * Mathf.Rad2Deg;
+            
+            Quaternion projectileRot = Quaternion.Euler(0, 0, lookAngle + lookDirOffset);
+            GameObject shotProjectileGO = Instantiate(projectile, transform.position, projectileRot);
+            Projectile shotProjectile = shotProjectileGO.GetComponent<Projectile>();
+
+            shotProjectile.Fire(shootDir);
         }
     }
 }
